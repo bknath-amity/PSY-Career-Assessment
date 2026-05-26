@@ -1,0 +1,938 @@
+Procedure- "populate_view_reports"
+
+BEGIN
+    DECLARE done INT DEFAULT FALSE;
+    DECLARE v_student_id INT;
+    DECLARE v_name VARCHAR(500);
+    DECLARE v_father VARCHAR(500);
+    DECLARE v_dob DATE;
+    DECLARE v_admission_no VARCHAR(20);
+    DECLARE v_exam_key VARCHAR(20);
+    DECLARE v_school_name VARCHAR(1000);
+    DECLARE v_class_name VARCHAR(5);
+    DECLARE v_section_name VARCHAR(20);
+    DECLARE v_created_at DATETIME;
+    
+    DECLARE cur CURSOR FOR 
+        SELECT 
+            s.ID, s.NAME, s.FATHER, s.DOB, s.ADMISSION_NO, s.EXAM_KEY,
+            sch.NAME, cls.TITLE, sec.TITLE, s.CRAETED_ON
+        FROM student s
+        JOIN school sch ON s.SCHOOL = sch.ID
+        JOIN classes cls ON s.SCHOOL_CLASS = cls.ID
+        JOIN section sec ON s.SECTION = sec.ID;
+    
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+    
+    OPEN cur;
+    
+    read_loop: LOOP
+        FETCH cur INTO v_student_id, v_name, v_father, v_dob, v_admission_no, v_exam_key, 
+                      v_school_name, v_class_name, v_section_name, v_created_at;
+        
+        IF done THEN
+            LEAVE read_loop;
+        END IF;
+        
+        INSERT INTO view_reports (
+            student_id, name, father, dob, admission_no, exam_key,
+            school_name, class_name, section_name,
+            dbda_ca, dbda_cl, dbda_ma, dbda_na, dbda_ra, dbda_sa, dbda_va, dbda_total,
+            areas_of_proficiency, areas_of_strength, areas_of_improvement,
+            mbti_output,
+            cis_adm, cis_ent, cis_def, cis_sp, cis_cr, cis_per,
+            cis_med, cis_tech, cis_exp, cis_comp, cis_hum, cis_edn, cis_nat, cis_cl,
+            cis_sten_areas, cis_interest_areas,
+            feedback_academic, feedback_child, feedback_parents,
+            feedback_career_opt1, feedback_career_opt2, feedback_remarks, feedback_counsellor,
+            created_at, updated_at
+        ) VALUES (
+            v_student_id, v_name, v_father, v_dob, v_admission_no, v_exam_key,
+            v_school_name, v_class_name, v_section_name,
+            
+            -- DBDA CA (Area 1)
+            (SELECT CASE WHEN SUM(MARKS) >= 0 AND SUM(MARKS) <= 2 THEN 1
+                WHEN SUM(MARKS) = 3 THEN 2 WHEN SUM(MARKS) = 4 THEN 3
+                WHEN SUM(MARKS) = 5 THEN 4 WHEN SUM(MARKS) = 6 THEN 5
+                WHEN SUM(MARKS) >= 7 AND SUM(MARKS) <= 8 THEN 6
+                WHEN SUM(MARKS) >= 9 AND SUM(MARKS) <= 10 THEN 7
+                WHEN SUM(MARKS) >= 10 AND SUM(MARKS) <= 11 THEN 8
+                WHEN SUM(MARKS) >= 11 AND SUM(MARKS) <= 12 THEN 9
+                WHEN SUM(MARKS) >= 12 THEN 10
+                ELSE NULL END
+            FROM student_result sr JOIN dbda_exam de ON de.EXAM = sr.EXAM
+            WHERE sr.STUDENT = v_student_id AND de.DBDA_AREA = 1),
+            
+            -- DBDA CL (Area 2)
+            (SELECT CASE WHEN SUM(MARKS) >= 0 AND SUM(MARKS) <= 10 THEN 1
+                WHEN SUM(MARKS) >= 11 AND SUM(MARKS) <= 15 THEN 2
+                WHEN SUM(MARKS) >= 16 AND SUM(MARKS) <= 20 THEN 3
+                WHEN SUM(MARKS) >= 21 AND SUM(MARKS) <= 25 THEN 4
+                WHEN SUM(MARKS) >= 26 AND SUM(MARKS) <= 30 THEN 5
+                WHEN SUM(MARKS) >= 31 AND SUM(MARKS) <= 35 THEN 6
+                WHEN SUM(MARKS) >= 36 AND SUM(MARKS) <= 40 THEN 7
+                WHEN SUM(MARKS) >= 41 AND SUM(MARKS) <= 44 THEN 8
+                WHEN SUM(MARKS) >= 45 AND SUM(MARKS) <= 49 THEN 9
+                WHEN SUM(MARKS) >= 50 THEN 10
+                ELSE NULL END
+            FROM student_result sr JOIN dbda_exam de ON de.EXAM = sr.EXAM
+            WHERE sr.STUDENT = v_student_id AND de.DBDA_AREA = 2),
+            
+            -- DBDA MA (Area 3)
+            (SELECT CASE WHEN SUM(MARKS) >= 0 AND SUM(MARKS) <= 3 THEN 1
+                WHEN SUM(MARKS) = 4 THEN 2 WHEN SUM(MARKS) >= 5 AND SUM(MARKS) <= 6 THEN 3
+                WHEN SUM(MARKS) = 7 THEN 4 WHEN SUM(MARKS) >= 8 AND SUM(MARKS) <= 9 THEN 5
+                WHEN SUM(MARKS) = 10 THEN 6 WHEN SUM(MARKS) >= 11 AND SUM(MARKS) <= 12 THEN 7
+                WHEN SUM(MARKS) = 13 THEN 8 WHEN SUM(MARKS) >= 14 AND SUM(MARKS) <= 15 THEN 9
+                WHEN SUM(MARKS) >= 16 THEN 10
+                ELSE NULL END
+            FROM student_result sr JOIN dbda_exam de ON de.EXAM = sr.EXAM
+            WHERE sr.STUDENT = v_student_id AND de.DBDA_AREA = 3),
+            
+            -- DBDA NA (Area 4)
+            (SELECT CASE WHEN SUM(MARKS) >= 0 AND SUM(MARKS) <= 2 THEN 1
+                WHEN SUM(MARKS) = 3 THEN 2 WHEN SUM(MARKS) = 4 THEN 3
+                WHEN SUM(MARKS) = 5 THEN 4 WHEN SUM(MARKS) = 6 THEN 5
+                WHEN SUM(MARKS) >= 7 AND SUM(MARKS) <= 8 THEN 6
+                WHEN SUM(MARKS) = 9 THEN 7 WHEN SUM(MARKS) = 10 THEN 8
+                WHEN SUM(MARKS) = 11 THEN 9 WHEN SUM(MARKS) >= 12 THEN 10
+                ELSE NULL END
+            FROM student_result sr JOIN dbda_exam de ON de.EXAM = sr.EXAM
+            WHERE sr.STUDENT = v_student_id AND de.DBDA_AREA = 4),
+            
+            -- DBDA RA (Area 6)
+            (SELECT CASE WHEN SUM(MARKS) >= 0 AND SUM(MARKS) <= 1 THEN 1
+                WHEN SUM(MARKS) = 2 THEN 2 WHEN SUM(MARKS) = 3 THEN 4
+                WHEN SUM(MARKS) = 4 THEN 5 WHEN SUM(MARKS) = 5 THEN 7
+                WHEN SUM(MARKS) = 6 THEN 8 WHEN SUM(MARKS) >= 7 THEN 10
+                ELSE NULL END
+            FROM student_result sr JOIN dbda_exam de ON de.EXAM = sr.EXAM
+            WHERE sr.STUDENT = v_student_id AND de.DBDA_AREA = 6),
+            
+            -- DBDA SA (Area 7)
+            (SELECT CASE WHEN SUM(MARKS) >= 0 AND SUM(MARKS) <= 11 THEN 1
+                WHEN SUM(MARKS) >= 12 AND SUM(MARKS) <= 17 THEN 2
+                WHEN SUM(MARKS) >= 18 AND SUM(MARKS) <= 23 THEN 3
+                WHEN SUM(MARKS) >= 24 AND SUM(MARKS) <= 29 THEN 4
+                WHEN SUM(MARKS) >= 30 AND SUM(MARKS) <= 34 THEN 5
+                WHEN SUM(MARKS) >= 35 AND SUM(MARKS) <= 40 THEN 6
+                WHEN SUM(MARKS) >= 41 AND SUM(MARKS) <= 46 THEN 7
+                WHEN SUM(MARKS) >= 47 AND SUM(MARKS) <= 51 THEN 8
+                WHEN SUM(MARKS) >= 52 AND SUM(MARKS) <= 57 THEN 9
+                WHEN SUM(MARKS) >= 58 THEN 10
+                ELSE NULL END
+            FROM student_result sr JOIN dbda_exam de ON de.EXAM = sr.EXAM
+            WHERE sr.STUDENT = v_student_id AND de.DBDA_AREA = 7),
+            
+            -- DBDA VA (Area 8)
+            (SELECT CASE WHEN SUM(MARKS) >= 0 AND SUM(MARKS) <= 2 THEN 1
+                WHEN SUM(MARKS) >= 3 AND SUM(MARKS) <= 4 THEN 2
+                WHEN SUM(MARKS) = 5 THEN 3 WHEN SUM(MARKS) = 6 THEN 4
+                WHEN SUM(MARKS) >= 7 AND SUM(MARKS) <= 8 THEN 5
+                WHEN SUM(MARKS) = 9 THEN 6 WHEN SUM(MARKS) = 10 THEN 7
+                WHEN SUM(MARKS) >= 11 AND SUM(MARKS) <= 12 THEN 8
+                WHEN SUM(MARKS) = 13 THEN 9 WHEN SUM(MARKS) >= 14 THEN 10
+                ELSE NULL END
+            FROM student_result sr JOIN dbda_exam de ON de.EXAM = sr.EXAM
+            WHERE sr.STUDENT = v_student_id AND de.DBDA_AREA = 8),
+            
+            -- DBDA Total
+            (SELECT IF(SUM(sten) = 0, NULL, SUM(sten)) FROM (
+                SELECT CASE 
+                    WHEN de.DBDA_AREA=1 AND SUM(sr.MARKS)>=0 AND SUM(sr.MARKS)<=2 THEN 1
+                    WHEN de.DBDA_AREA=1 AND SUM(sr.MARKS)=3 THEN 2
+                    WHEN de.DBDA_AREA=1 AND SUM(sr.MARKS)=4 THEN 3
+                    WHEN de.DBDA_AREA=1 AND SUM(sr.MARKS)=5 THEN 4
+                    WHEN de.DBDA_AREA=1 AND SUM(sr.MARKS)=6 THEN 5
+                    WHEN de.DBDA_AREA=1 AND SUM(sr.MARKS)>=7 AND SUM(sr.MARKS)<=8 THEN 6
+                    WHEN de.DBDA_AREA=1 AND SUM(sr.MARKS)>=9 AND SUM(sr.MARKS)<=10 THEN 7
+                    WHEN de.DBDA_AREA=1 AND SUM(sr.MARKS)>=10 AND SUM(sr.MARKS)<=11 THEN 8
+                    WHEN de.DBDA_AREA=1 AND SUM(sr.MARKS)>=11 AND SUM(sr.MARKS)<=12 THEN 9
+                    WHEN de.DBDA_AREA=1 AND SUM(sr.MARKS)>=12 THEN 10
+                    WHEN de.DBDA_AREA=2 AND SUM(sr.MARKS)>=0 AND SUM(sr.MARKS)<=10 THEN 1
+                    WHEN de.DBDA_AREA=2 AND SUM(sr.MARKS)>=11 AND SUM(sr.MARKS)<=15 THEN 2
+                    WHEN de.DBDA_AREA=2 AND SUM(sr.MARKS)>=16 AND SUM(sr.MARKS)<=20 THEN 3
+                    WHEN de.DBDA_AREA=2 AND SUM(sr.MARKS)>=21 AND SUM(sr.MARKS)<=25 THEN 4
+                    WHEN de.DBDA_AREA=2 AND SUM(sr.MARKS)>=26 AND SUM(sr.MARKS)<=30 THEN 5
+                    WHEN de.DBDA_AREA=2 AND SUM(sr.MARKS)>=31 AND SUM(sr.MARKS)<=35 THEN 6
+                    WHEN de.DBDA_AREA=2 AND SUM(sr.MARKS)>=36 AND SUM(sr.MARKS)<=40 THEN 7
+                    WHEN de.DBDA_AREA=2 AND SUM(sr.MARKS)>=41 AND SUM(sr.MARKS)<=44 THEN 8
+                    WHEN de.DBDA_AREA=2 AND SUM(sr.MARKS)>=45 AND SUM(sr.MARKS)<=49 THEN 9
+                    WHEN de.DBDA_AREA=2 AND SUM(sr.MARKS)>=50 THEN 10
+                    WHEN de.DBDA_AREA=3 AND SUM(sr.MARKS)>=0 AND SUM(sr.MARKS)<=3 THEN 1
+                    WHEN de.DBDA_AREA=3 AND SUM(sr.MARKS)=4 THEN 2
+                    WHEN de.DBDA_AREA=3 AND SUM(sr.MARKS)>=5 AND SUM(sr.MARKS)<=6 THEN 3
+                    WHEN de.DBDA_AREA=3 AND SUM(sr.MARKS)=7 THEN 4
+                    WHEN de.DBDA_AREA=3 AND SUM(sr.MARKS)>=8 AND SUM(sr.MARKS)<=9 THEN 5
+                    WHEN de.DBDA_AREA=3 AND SUM(sr.MARKS)=10 THEN 6
+                    WHEN de.DBDA_AREA=3 AND SUM(sr.MARKS)>=11 AND SUM(sr.MARKS)<=12 THEN 7
+                    WHEN de.DBDA_AREA=3 AND SUM(sr.MARKS)=13 THEN 8
+                    WHEN de.DBDA_AREA=3 AND SUM(sr.MARKS)>=14 AND SUM(sr.MARKS)<=15 THEN 9
+                    WHEN de.DBDA_AREA=3 AND SUM(sr.MARKS)>=16 THEN 10
+                    WHEN de.DBDA_AREA=4 AND SUM(sr.MARKS)>=0 AND SUM(sr.MARKS)<=2 THEN 1
+                    WHEN de.DBDA_AREA=4 AND SUM(sr.MARKS)=3 THEN 2
+                    WHEN de.DBDA_AREA=4 AND SUM(sr.MARKS)=4 THEN 3
+                    WHEN de.DBDA_AREA=4 AND SUM(sr.MARKS)=5 THEN 4
+                    WHEN de.DBDA_AREA=4 AND SUM(sr.MARKS)=6 THEN 5
+                    WHEN de.DBDA_AREA=4 AND SUM(sr.MARKS)>=7 AND SUM(sr.MARKS)<=8 THEN 6
+                    WHEN de.DBDA_AREA=4 AND SUM(sr.MARKS)=9 THEN 7
+                    WHEN de.DBDA_AREA=4 AND SUM(sr.MARKS)=10 THEN 8
+                    WHEN de.DBDA_AREA=4 AND SUM(sr.MARKS)=11 THEN 9
+                    WHEN de.DBDA_AREA=4 AND SUM(sr.MARKS)>=12 THEN 10
+                    WHEN de.DBDA_AREA=6 AND SUM(sr.MARKS)>=0 AND SUM(sr.MARKS)<=1 THEN 1
+                    WHEN de.DBDA_AREA=6 AND SUM(sr.MARKS)=2 THEN 2
+                    WHEN de.DBDA_AREA=6 AND SUM(sr.MARKS)=3 THEN 4
+                    WHEN de.DBDA_AREA=6 AND SUM(sr.MARKS)=4 THEN 5
+                    WHEN de.DBDA_AREA=6 AND SUM(sr.MARKS)=5 THEN 7
+                    WHEN de.DBDA_AREA=6 AND SUM(sr.MARKS)=6 THEN 8
+                    WHEN de.DBDA_AREA=6 AND SUM(sr.MARKS)>=7 THEN 10
+                    WHEN de.DBDA_AREA=7 AND SUM(sr.MARKS)>=0 AND SUM(sr.MARKS)<=11 THEN 1
+                    WHEN de.DBDA_AREA=7 AND SUM(sr.MARKS)>=12 AND SUM(sr.MARKS)<=17 THEN 2
+                    WHEN de.DBDA_AREA=7 AND SUM(sr.MARKS)>=18 AND SUM(sr.MARKS)<=23 THEN 3
+                    WHEN de.DBDA_AREA=7 AND SUM(sr.MARKS)>=24 AND SUM(sr.MARKS)<=29 THEN 4
+                    WHEN de.DBDA_AREA=7 AND SUM(sr.MARKS)>=30 AND SUM(sr.MARKS)<=34 THEN 5
+                    WHEN de.DBDA_AREA=7 AND SUM(sr.MARKS)>=35 AND SUM(sr.MARKS)<=40 THEN 6
+                    WHEN de.DBDA_AREA=7 AND SUM(sr.MARKS)>=41 AND SUM(sr.MARKS)<=46 THEN 7
+                    WHEN de.DBDA_AREA=7 AND SUM(sr.MARKS)>=47 AND SUM(sr.MARKS)<=51 THEN 8
+                    WHEN de.DBDA_AREA=7 AND SUM(sr.MARKS)>=52 AND SUM(sr.MARKS)<=57 THEN 9
+                    WHEN de.DBDA_AREA=7 AND SUM(sr.MARKS)>=58 THEN 10
+                    WHEN de.DBDA_AREA=8 AND SUM(sr.MARKS)>=0 AND SUM(sr.MARKS)<=2 THEN 1
+                    WHEN de.DBDA_AREA=8 AND SUM(sr.MARKS)>=3 AND SUM(sr.MARKS)<=4 THEN 2
+                    WHEN de.DBDA_AREA=8 AND SUM(sr.MARKS)=5 THEN 3
+                    WHEN de.DBDA_AREA=8 AND SUM(sr.MARKS)=6 THEN 4
+                    WHEN de.DBDA_AREA=8 AND SUM(sr.MARKS)>=7 AND SUM(sr.MARKS)<=8 THEN 5
+                    WHEN de.DBDA_AREA=8 AND SUM(sr.MARKS)=9 THEN 6
+                    WHEN de.DBDA_AREA=8 AND SUM(sr.MARKS)=10 THEN 7
+                    WHEN de.DBDA_AREA=8 AND SUM(sr.MARKS)>=11 AND SUM(sr.MARKS)<=12 THEN 8
+                    WHEN de.DBDA_AREA=8 AND SUM(sr.MARKS)=13 THEN 9
+                    WHEN de.DBDA_AREA=8 AND SUM(sr.MARKS)>=14 THEN 10
+                END AS sten
+                FROM dbda_exam de
+                JOIN student_result sr ON de.EXAM = sr.EXAM
+                WHERE sr.STUDENT = v_student_id
+                GROUP BY de.DBDA_AREA
+            ) AS sten_scores),
+            
+            -- Areas of Proficiency - Only if student has non-NULL DBDA scores
+            (SELECT CASE 
+                WHEN EXISTS (
+                    SELECT 1 FROM student_result sr 
+                    JOIN dbda_exam de ON de.EXAM = sr.EXAM 
+                    WHERE sr.STUDENT = v_student_id 
+                    AND sr.MARKS IS NOT NULL
+                    LIMIT 1
+                ) THEN
+                    (SELECT GROUP_CONCAT(DISTINCT ds.DETAIL SEPARATOR '\n- ')
+                     FROM dbda_score_detial ds
+                     WHERE ds.SCORE = 3 AND ds.DBDA_AREA IN (
+                         SELECT de.DBDA_AREA 
+                         FROM dbda_exam de
+                         JOIN student_result sr ON de.EXAM = sr.EXAM
+                         WHERE sr.STUDENT = v_student_id 
+                         AND sr.MARKS IS NOT NULL
+                         GROUP BY de.DBDA_AREA
+                         HAVING 
+                             (de.DBDA_AREA=1 AND SUM(sr.MARKS) IS NOT NULL AND SUM(sr.MARKS) >= 10) OR
+                             (de.DBDA_AREA=2 AND SUM(sr.MARKS) IS NOT NULL AND SUM(sr.MARKS) >= 41) OR
+                             (de.DBDA_AREA=3 AND SUM(sr.MARKS) IS NOT NULL AND SUM(sr.MARKS) >= 13) OR
+                             (de.DBDA_AREA=4 AND SUM(sr.MARKS) IS NOT NULL AND SUM(sr.MARKS) >= 10) OR
+                             (de.DBDA_AREA=6 AND SUM(sr.MARKS) IS NOT NULL AND SUM(sr.MARKS) >= 6) OR
+                             (de.DBDA_AREA=7 AND SUM(sr.MARKS) IS NOT NULL AND SUM(sr.MARKS) >= 47) OR
+                             (de.DBDA_AREA=8 AND SUM(sr.MARKS) IS NOT NULL AND SUM(sr.MARKS) >= 11)
+                     ))
+                ELSE NULL
+             END),
+             
+            -- Areas of Strength - Only if student has non-NULL DBDA scores
+            (SELECT CASE 
+                WHEN EXISTS (
+                    SELECT 1 FROM student_result sr 
+                    JOIN dbda_exam de ON de.EXAM = sr.EXAM 
+                    WHERE sr.STUDENT = v_student_id 
+                    AND sr.MARKS IS NOT NULL
+                    LIMIT 1
+                ) THEN
+                    (SELECT GROUP_CONCAT(DISTINCT ds.DETAIL SEPARATOR '\n- ')
+                     FROM dbda_score_detial ds
+                     WHERE ds.SCORE = 2 AND ds.DBDA_AREA IN (
+                         SELECT de.DBDA_AREA 
+                         FROM dbda_exam de
+                         JOIN student_result sr ON de.EXAM = sr.EXAM
+                         WHERE sr.STUDENT = v_student_id 
+                         AND sr.MARKS IS NOT NULL
+                         GROUP BY de.DBDA_AREA
+                         HAVING 
+                             (de.DBDA_AREA=1 AND SUM(sr.MARKS) IS NOT NULL AND SUM(sr.MARKS) >= 6 AND SUM(sr.MARKS) <= 9) OR
+                             (de.DBDA_AREA=2 AND SUM(sr.MARKS) IS NOT NULL AND SUM(sr.MARKS) >= 26 AND SUM(sr.MARKS) <= 40) OR
+                             (de.DBDA_AREA=3 AND SUM(sr.MARKS) IS NOT NULL AND SUM(sr.MARKS) >= 8 AND SUM(sr.MARKS) <= 12) OR
+                             (de.DBDA_AREA=4 AND SUM(sr.MARKS) IS NOT NULL AND SUM(sr.MARKS) >= 6 AND SUM(sr.MARKS) <= 9) OR
+                             (de.DBDA_AREA=6 AND SUM(sr.MARKS) IS NOT NULL AND SUM(sr.MARKS) >= 4 AND SUM(sr.MARKS) <= 5) OR
+                             (de.DBDA_AREA=7 AND SUM(sr.MARKS) IS NOT NULL AND SUM(sr.MARKS) >= 30 AND SUM(sr.MARKS) <= 46) OR
+                             (de.DBDA_AREA=8 AND SUM(sr.MARKS) IS NOT NULL AND SUM(sr.MARKS) >= 7 AND SUM(sr.MARKS) <= 10)
+                     ))
+                ELSE NULL
+             END),
+             
+            -- Areas of Improvement - Only if student has non-NULL DBDA scores
+            (SELECT CASE 
+                WHEN EXISTS (
+                    SELECT 1 FROM student_result sr 
+                    JOIN dbda_exam de ON de.EXAM = sr.EXAM 
+                    WHERE sr.STUDENT = v_student_id 
+                    AND sr.MARKS IS NOT NULL
+                    LIMIT 1
+                ) THEN
+                    (SELECT GROUP_CONCAT(DISTINCT ds.DETAIL SEPARATOR '\n- ')
+                     FROM dbda_score_detial ds
+                     WHERE ds.SCORE = 1 AND ds.DBDA_AREA IN (
+                         SELECT de.DBDA_AREA 
+                         FROM dbda_exam de
+                         JOIN student_result sr ON de.EXAM = sr.EXAM
+                         WHERE sr.STUDENT = v_student_id 
+                         AND sr.MARKS IS NOT NULL
+                         GROUP BY de.DBDA_AREA
+                         HAVING 
+                             (de.DBDA_AREA=1 AND SUM(sr.MARKS) IS NOT NULL AND SUM(sr.MARKS) >= 0 AND SUM(sr.MARKS) <= 5) OR
+                             (de.DBDA_AREA=2 AND SUM(sr.MARKS) IS NOT NULL AND SUM(sr.MARKS) >= 0 AND SUM(sr.MARKS) <= 25) OR
+                             (de.DBDA_AREA=3 AND SUM(sr.MARKS) IS NOT NULL AND SUM(sr.MARKS) >= 0 AND SUM(sr.MARKS) <= 7) OR
+                             (de.DBDA_AREA=4 AND SUM(sr.MARKS) IS NOT NULL AND SUM(sr.MARKS) >= 0 AND SUM(sr.MARKS) <= 5) OR
+                             (de.DBDA_AREA=6 AND SUM(sr.MARKS) IS NOT NULL AND SUM(sr.MARKS) >= 0 AND SUM(sr.MARKS) <= 3) OR
+                             (de.DBDA_AREA=7 AND SUM(sr.MARKS) IS NOT NULL AND SUM(sr.MARKS) >= 0 AND SUM(sr.MARKS) <= 29) OR
+                             (de.DBDA_AREA=8 AND SUM(sr.MARKS) IS NOT NULL AND SUM(sr.MARKS) >= 0 AND SUM(sr.MARKS) <= 6)
+                     ))
+                ELSE NULL
+             END),
+            
+            -- MBTI Output
+            (SELECT mr.OUTPUT
+             FROM mbtireport mr
+             WHERE mr.RESPONCE = (
+                 SELECT GROUP_CONCAT(sr2.ANSWER ORDER BY sr2.ID SEPARATOR ',')
+                 FROM student_result sr2 
+                 WHERE sr2.STUDENT = v_student_id AND sr2.EXAM = 1
+             )
+             LIMIT 1
+            ),
+            
+            -- CIS Scores
+            (SELECT STEN_SCORE FROM student_result_cis WHERE STUDENT = v_student_id AND AREA = 'ADM' LIMIT 1),
+            (SELECT STEN_SCORE FROM student_result_cis WHERE STUDENT = v_student_id AND AREA = 'ENT' LIMIT 1),
+            (SELECT STEN_SCORE FROM student_result_cis WHERE STUDENT = v_student_id AND AREA = 'DEF' LIMIT 1),
+            (SELECT STEN_SCORE FROM student_result_cis WHERE STUDENT = v_student_id AND AREA = 'SP' LIMIT 1),
+            (SELECT STEN_SCORE FROM student_result_cis WHERE STUDENT = v_student_id AND AREA = 'CR' LIMIT 1),
+            (SELECT STEN_SCORE FROM student_result_cis WHERE STUDENT = v_student_id AND AREA = 'PER' LIMIT 1),
+            (SELECT STEN_SCORE FROM student_result_cis WHERE STUDENT = v_student_id AND AREA = 'MED' LIMIT 1),
+            (SELECT STEN_SCORE FROM student_result_cis WHERE STUDENT = v_student_id AND AREA = 'TECH' LIMIT 1),
+            (SELECT STEN_SCORE FROM student_result_cis WHERE STUDENT = v_student_id AND AREA = 'EXP' LIMIT 1),
+            (SELECT STEN_SCORE FROM student_result_cis WHERE STUDENT = v_student_id AND AREA = 'COMP' LIMIT 1),
+            (SELECT STEN_SCORE FROM student_result_cis WHERE STUDENT = v_student_id AND AREA = 'HUM' LIMIT 1),
+            (SELECT STEN_SCORE FROM student_result_cis WHERE STUDENT = v_student_id AND AREA = 'EDN' LIMIT 1),
+            (SELECT STEN_SCORE FROM student_result_cis WHERE STUDENT = v_student_id AND AREA = 'NAT' LIMIT 1),
+            (SELECT STEN_SCORE FROM student_result_cis WHERE STUDENT = v_student_id AND AREA = 'CL' LIMIT 1),
+            
+            -- CIS Sten Areas
+            (SELECT CASE WHEN EXISTS(SELECT 1 FROM student_result_cis WHERE STUDENT = v_student_id LIMIT 1) THEN
+                (SELECT GROUP_CONCAT(DISTINCT cs.DETAILS SEPARATOR ', ')
+                 FROM cisstenarea cs
+                 WHERE cs.SHORT_TITLE IN (
+                     SELECT AREA FROM student_result_cis 
+                     WHERE STUDENT = v_student_id 
+                     AND STEN_SCORE = (SELECT MAX(STEN_SCORE) FROM student_result_cis WHERE STUDENT = v_student_id)
+                 ))
+             ELSE NULL END),
+             
+            -- CIS Interest Areas
+            (SELECT CASE WHEN EXISTS(SELECT 1 FROM student_result_cis WHERE STUDENT = v_student_id LIMIT 1) THEN
+                (SELECT GROUP_CONCAT(DISTINCT CONCAT(ci.TITLE, ': ', ci.DETAILS) SEPARATOR ' | ')
+                 FROM cisintrestarea ci
+                 WHERE ci.ID IN (
+                     SELECT cs.CIS_INTREST_AREA 
+                     FROM cisstenarea cs
+                     WHERE cs.SHORT_TITLE IN (
+                         SELECT AREA FROM student_result_cis 
+                         WHERE STUDENT = v_student_id 
+                         AND STEN_SCORE = (SELECT MAX(STEN_SCORE) FROM student_result_cis WHERE STUDENT = v_student_id)
+                     )
+                 ))
+             ELSE NULL END),
+            
+            -- Feedback
+            (SELECT academic FROM student_feedback WHERE student = v_student_id LIMIT 1),
+            (SELECT child FROM student_feedback WHERE student = v_student_id LIMIT 1),
+            (SELECT parents FROM student_feedback WHERE student = v_student_id LIMIT 1),
+            (SELECT careeropt1 FROM student_feedback WHERE student = v_student_id LIMIT 1),
+            (SELECT careeropt2 FROM student_feedback WHERE student = v_student_id LIMIT 1),
+            (SELECT remarks FROM student_feedback WHERE student = v_student_id LIMIT 1),
+            (SELECT u.name FROM student_feedback sf JOIN user u ON sf.createdby = u.id WHERE sf.student = v_student_id LIMIT 1),
+            
+            v_created_at,
+            NOW()
+        )
+        ON DUPLICATE KEY UPDATE
+            name = VALUES(name),
+            father = VALUES(father),
+            dob = VALUES(dob),
+            admission_no = VALUES(admission_no),
+            exam_key = VALUES(exam_key),
+            school_name = VALUES(school_name),
+            class_name = VALUES(class_name),
+            section_name = VALUES(section_name),
+            dbda_ca = VALUES(dbda_ca),
+            dbda_cl = VALUES(dbda_cl),
+            dbda_ma = VALUES(dbda_ma),
+            dbda_na = VALUES(dbda_na),
+            dbda_ra = VALUES(dbda_ra),
+            dbda_sa = VALUES(dbda_sa),
+            dbda_va = VALUES(dbda_va),
+            dbda_total = VALUES(dbda_total),
+            areas_of_proficiency = VALUES(areas_of_proficiency),
+            areas_of_strength = VALUES(areas_of_strength),
+            areas_of_improvement = VALUES(areas_of_improvement),
+            mbti_output = VALUES(mbti_output),
+            cis_adm = VALUES(cis_adm),
+            cis_ent = VALUES(cis_ent),
+            cis_def = VALUES(cis_def),
+            cis_sp = VALUES(cis_sp),
+            cis_cr = VALUES(cis_cr),
+            cis_per = VALUES(cis_per),
+            cis_med = VALUES(cis_med),
+            cis_tech = VALUES(cis_tech),
+            cis_exp = VALUES(cis_exp),
+            cis_comp = VALUES(cis_comp),
+            cis_hum = VALUES(cis_hum),
+            cis_edn = VALUES(cis_edn),
+            cis_nat = VALUES(cis_nat),
+            cis_cl = VALUES(cis_cl),
+            cis_sten_areas = VALUES(cis_sten_areas),
+            cis_interest_areas = VALUES(cis_interest_areas),
+            feedback_academic = VALUES(feedback_academic),
+            feedback_child = VALUES(feedback_child),
+            feedback_parents = VALUES(feedback_parents),
+            feedback_career_opt1 = VALUES(feedback_career_opt1),
+            feedback_career_opt2 = VALUES(feedback_career_opt2),
+            feedback_remarks = VALUES(feedback_remarks),
+            feedback_counsellor = VALUES(feedback_counsellor),
+            updated_at = NOW();
+            
+    END LOOP;
+    
+    CLOSE cur;
+END
+
+2nd Procedure - "sync_single_student"
+
+BEGIN
+
+    INSERT INTO view_reports (
+        student_id,
+        name,
+        father,
+        dob,
+        admission_no,
+        exam_key,
+        school_name,
+        class_name,
+        section_name,
+
+        dbda_ca,
+        dbda_cl,
+        dbda_ma,
+        dbda_na,
+        dbda_ra,
+        dbda_sa,
+        dbda_va,
+        dbda_total,
+
+        areas_of_proficiency,
+        areas_of_strength,
+        areas_of_improvement,
+
+        mbti_output,
+
+        cis_adm,
+        cis_ent,
+        cis_def,
+        cis_sp,
+        cis_cr,
+        cis_per,
+        cis_med,
+        cis_tech,
+        cis_exp,
+        cis_comp,
+        cis_hum,
+        cis_edn,
+        cis_nat,
+        cis_cl,
+
+        cis_sten_areas,
+        cis_interest_areas,
+
+        feedback_academic,
+        feedback_child,
+        feedback_parents,
+        feedback_career_opt1,
+        feedback_career_opt2,
+        feedback_remarks,
+        feedback_counsellor,
+
+        created_at,
+        updated_at
+    )
+
+    SELECT
+        s.ID,
+        s.NAME,
+        s.FATHER,
+        s.DOB,
+        s.ADMISSION_NO,
+        s.EXAM_KEY,
+
+        sch.NAME,
+        cls.TITLE,
+        sec.TITLE,
+
+        /* DBDA CA */
+        (
+            SELECT CASE
+                WHEN SUM(MARKS) BETWEEN 0 AND 2 THEN 1
+                WHEN SUM(MARKS) = 3 THEN 2
+                WHEN SUM(MARKS) = 4 THEN 3
+                WHEN SUM(MARKS) = 5 THEN 4
+                WHEN SUM(MARKS) = 6 THEN 5
+                WHEN SUM(MARKS) BETWEEN 7 AND 8 THEN 6
+                WHEN SUM(MARKS) BETWEEN 9 AND 10 THEN 7
+                WHEN SUM(MARKS) BETWEEN 11 AND 12 THEN 8
+                WHEN SUM(MARKS) BETWEEN 13 AND 14 THEN 9
+                WHEN SUM(MARKS) >= 15 THEN 10
+            END
+            FROM student_result sr
+            JOIN dbda_exam de ON de.EXAM = sr.EXAM
+            WHERE sr.STUDENT = v_student_id
+            AND de.DBDA_AREA = 1
+        ),
+
+        /* DBDA CL */
+        (
+            SELECT CASE
+                WHEN SUM(MARKS) BETWEEN 0 AND 10 THEN 1
+                WHEN SUM(MARKS) BETWEEN 11 AND 15 THEN 2
+                WHEN SUM(MARKS) BETWEEN 16 AND 20 THEN 3
+                WHEN SUM(MARKS) BETWEEN 21 AND 25 THEN 4
+                WHEN SUM(MARKS) BETWEEN 26 AND 30 THEN 5
+                WHEN SUM(MARKS) BETWEEN 31 AND 35 THEN 6
+                WHEN SUM(MARKS) BETWEEN 36 AND 40 THEN 7
+                WHEN SUM(MARKS) BETWEEN 41 AND 44 THEN 8
+                WHEN SUM(MARKS) BETWEEN 45 AND 49 THEN 9
+                WHEN SUM(MARKS) >= 50 THEN 10
+            END
+            FROM student_result sr
+            JOIN dbda_exam de ON de.EXAM = sr.EXAM
+            WHERE sr.STUDENT = v_student_id
+            AND de.DBDA_AREA = 2
+        ),
+
+        /* DBDA MA */
+        (
+            SELECT CASE
+                WHEN SUM(MARKS) BETWEEN 0 AND 3 THEN 1
+                WHEN SUM(MARKS) = 4 THEN 2
+                WHEN SUM(MARKS) BETWEEN 5 AND 6 THEN 3
+                WHEN SUM(MARKS) = 7 THEN 4
+                WHEN SUM(MARKS) BETWEEN 8 AND 9 THEN 5
+                WHEN SUM(MARKS) = 10 THEN 6
+                WHEN SUM(MARKS) BETWEEN 11 AND 12 THEN 7
+                WHEN SUM(MARKS) = 13 THEN 8
+                WHEN SUM(MARKS) BETWEEN 14 AND 15 THEN 9
+                WHEN SUM(MARKS) >= 16 THEN 10
+            END
+            FROM student_result sr
+            JOIN dbda_exam de ON de.EXAM = sr.EXAM
+            WHERE sr.STUDENT = v_student_id
+            AND de.DBDA_AREA = 3
+        ),
+
+        /* DBDA NA */
+        (
+            SELECT CASE
+                WHEN SUM(MARKS) BETWEEN 0 AND 2 THEN 1
+                WHEN SUM(MARKS) = 3 THEN 2
+                WHEN SUM(MARKS) = 4 THEN 3
+                WHEN SUM(MARKS) = 5 THEN 4
+                WHEN SUM(MARKS) = 6 THEN 5
+                WHEN SUM(MARKS) BETWEEN 7 AND 8 THEN 6
+                WHEN SUM(MARKS) = 9 THEN 7
+                WHEN SUM(MARKS) = 10 THEN 8
+                WHEN SUM(MARKS) = 11 THEN 9
+                WHEN SUM(MARKS) >= 12 THEN 10
+            END
+            FROM student_result sr
+            JOIN dbda_exam de ON de.EXAM = sr.EXAM
+            WHERE sr.STUDENT = v_student_id
+            AND de.DBDA_AREA = 4
+        ),
+
+        /* DBDA RA */
+        (
+            SELECT CASE
+                WHEN SUM(MARKS) BETWEEN 0 AND 1 THEN 1
+                WHEN SUM(MARKS) = 2 THEN 2
+                WHEN SUM(MARKS) = 3 THEN 4
+                WHEN SUM(MARKS) = 4 THEN 5
+                WHEN SUM(MARKS) = 5 THEN 7
+                WHEN SUM(MARKS) = 6 THEN 8
+                WHEN SUM(MARKS) >= 7 THEN 10
+            END
+            FROM student_result sr
+            JOIN dbda_exam de ON de.EXAM = sr.EXAM
+            WHERE sr.STUDENT = v_student_id
+            AND de.DBDA_AREA = 6
+        ),
+
+        /* DBDA SA */
+        (
+            SELECT CASE
+                WHEN SUM(MARKS) BETWEEN 0 AND 11 THEN 1
+                WHEN SUM(MARKS) BETWEEN 12 AND 17 THEN 2
+                WHEN SUM(MARKS) BETWEEN 18 AND 23 THEN 3
+                WHEN SUM(MARKS) BETWEEN 24 AND 29 THEN 4
+                WHEN SUM(MARKS) BETWEEN 30 AND 34 THEN 5
+                WHEN SUM(MARKS) BETWEEN 35 AND 40 THEN 6
+                WHEN SUM(MARKS) BETWEEN 41 AND 46 THEN 7
+                WHEN SUM(MARKS) BETWEEN 47 AND 51 THEN 8
+                WHEN SUM(MARKS) BETWEEN 52 AND 57 THEN 9
+                WHEN SUM(MARKS) >= 58 THEN 10
+            END
+            FROM student_result sr
+            JOIN dbda_exam de ON de.EXAM = sr.EXAM
+            WHERE sr.STUDENT = v_student_id
+            AND de.DBDA_AREA = 7
+        ),
+
+        /* DBDA VA */
+        (
+            SELECT CASE
+                WHEN SUM(MARKS) BETWEEN 0 AND 2 THEN 1
+                WHEN SUM(MARKS) BETWEEN 3 AND 4 THEN 2
+                WHEN SUM(MARKS) = 5 THEN 3
+                WHEN SUM(MARKS) = 6 THEN 4
+                WHEN SUM(MARKS) BETWEEN 7 AND 8 THEN 5
+                WHEN SUM(MARKS) = 9 THEN 6
+                WHEN SUM(MARKS) = 10 THEN 7
+                WHEN SUM(MARKS) BETWEEN 11 AND 12 THEN 8
+                WHEN SUM(MARKS) = 13 THEN 9
+                WHEN SUM(MARKS) >= 14 THEN 10
+            END
+            FROM student_result sr
+            JOIN dbda_exam de ON de.EXAM = sr.EXAM
+            WHERE sr.STUDENT = v_student_id
+            AND de.DBDA_AREA = 8
+        ),
+
+        /* DBDA TOTAL */
+        (
+            SELECT IFNULL(SUM(sten), NULL)
+            FROM (
+                SELECT
+                    CASE
+                        WHEN de.DBDA_AREA=1 AND SUM(sr.MARKS)>=0 AND SUM(sr.MARKS)<=2 THEN 1
+                        WHEN de.DBDA_AREA=1 AND SUM(sr.MARKS)=3 THEN 2
+                        WHEN de.DBDA_AREA=1 AND SUM(sr.MARKS)=4 THEN 3
+                        WHEN de.DBDA_AREA=1 AND SUM(sr.MARKS)=5 THEN 4
+                        WHEN de.DBDA_AREA=1 AND SUM(sr.MARKS)=6 THEN 5
+                        WHEN de.DBDA_AREA=1 AND SUM(sr.MARKS)>=7 AND SUM(sr.MARKS)<=8 THEN 6
+                        WHEN de.DBDA_AREA=1 AND SUM(sr.MARKS)>=9 AND SUM(sr.MARKS)<=10 THEN 7
+                        WHEN de.DBDA_AREA=1 AND SUM(sr.MARKS)>=10 AND SUM(sr.MARKS)<=11 THEN 8
+                        WHEN de.DBDA_AREA=1 AND SUM(sr.MARKS)>=11 AND SUM(sr.MARKS)<=12 THEN 9
+                        WHEN de.DBDA_AREA=1 AND SUM(sr.MARKS)>=12 THEN 10
+                        WHEN de.DBDA_AREA=2 AND SUM(sr.MARKS)>=0 AND SUM(sr.MARKS)<=10 THEN 1
+                        WHEN de.DBDA_AREA=2 AND SUM(sr.MARKS)>=11 AND SUM(sr.MARKS)<=15 THEN 2
+                        WHEN de.DBDA_AREA=2 AND SUM(sr.MARKS)>=16 AND SUM(sr.MARKS)<=20 THEN 3
+                        WHEN de.DBDA_AREA=2 AND SUM(sr.MARKS)>=21 AND SUM(sr.MARKS)<=25 THEN 4
+                        WHEN de.DBDA_AREA=2 AND SUM(sr.MARKS)>=26 AND SUM(sr.MARKS)<=30 THEN 5
+                        WHEN de.DBDA_AREA=2 AND SUM(sr.MARKS)>=31 AND SUM(sr.MARKS)<=35 THEN 6
+                        WHEN de.DBDA_AREA=2 AND SUM(sr.MARKS)>=36 AND SUM(sr.MARKS)<=40 THEN 7
+                        WHEN de.DBDA_AREA=2 AND SUM(sr.MARKS)>=41 AND SUM(sr.MARKS)<=44 THEN 8
+                        WHEN de.DBDA_AREA=2 AND SUM(sr.MARKS)>=45 AND SUM(sr.MARKS)<=49 THEN 9
+                        WHEN de.DBDA_AREA=2 AND SUM(sr.MARKS)>=50 THEN 10
+                        WHEN de.DBDA_AREA=3 AND SUM(sr.MARKS)>=0 AND SUM(sr.MARKS)<=3 THEN 1
+                        WHEN de.DBDA_AREA=3 AND SUM(sr.MARKS)=4 THEN 2
+                        WHEN de.DBDA_AREA=3 AND SUM(sr.MARKS)>=5 AND SUM(sr.MARKS)<=6 THEN 3
+                        WHEN de.DBDA_AREA=3 AND SUM(sr.MARKS)=7 THEN 4
+                        WHEN de.DBDA_AREA=3 AND SUM(sr.MARKS)>=8 AND SUM(sr.MARKS)<=9 THEN 5
+                        WHEN de.DBDA_AREA=3 AND SUM(sr.MARKS)=10 THEN 6
+                        WHEN de.DBDA_AREA=3 AND SUM(sr.MARKS)>=11 AND SUM(sr.MARKS)<=12 THEN 7
+                        WHEN de.DBDA_AREA=3 AND SUM(sr.MARKS)=13 THEN 8
+                        WHEN de.DBDA_AREA=3 AND SUM(sr.MARKS)>=14 AND SUM(sr.MARKS)<=15 THEN 9
+                        WHEN de.DBDA_AREA=3 AND SUM(sr.MARKS)>=16 THEN 10
+                        WHEN de.DBDA_AREA=4 AND SUM(sr.MARKS)>=0 AND SUM(sr.MARKS)<=2 THEN 1
+                        WHEN de.DBDA_AREA=4 AND SUM(sr.MARKS)=3 THEN 2
+                        WHEN de.DBDA_AREA=4 AND SUM(sr.MARKS)=4 THEN 3
+                        WHEN de.DBDA_AREA=4 AND SUM(sr.MARKS)=5 THEN 4
+                        WHEN de.DBDA_AREA=4 AND SUM(sr.MARKS)=6 THEN 5
+                        WHEN de.DBDA_AREA=4 AND SUM(sr.MARKS)>=7 AND SUM(sr.MARKS)<=8 THEN 6
+                        WHEN de.DBDA_AREA=4 AND SUM(sr.MARKS)=9 THEN 7
+                        WHEN de.DBDA_AREA=4 AND SUM(sr.MARKS)=10 THEN 8
+                        WHEN de.DBDA_AREA=4 AND SUM(sr.MARKS)=11 THEN 9
+                        WHEN de.DBDA_AREA=4 AND SUM(sr.MARKS)>=12 THEN 10
+                        WHEN de.DBDA_AREA=6 AND SUM(sr.MARKS)>=0 AND SUM(sr.MARKS)<=1 THEN 1
+                        WHEN de.DBDA_AREA=6 AND SUM(sr.MARKS)=2 THEN 2
+                        WHEN de.DBDA_AREA=6 AND SUM(sr.MARKS)=3 THEN 4
+                        WHEN de.DBDA_AREA=6 AND SUM(sr.MARKS)=4 THEN 5
+                        WHEN de.DBDA_AREA=6 AND SUM(sr.MARKS)=5 THEN 7
+                        WHEN de.DBDA_AREA=6 AND SUM(sr.MARKS)=6 THEN 8
+                        WHEN de.DBDA_AREA=6 AND SUM(sr.MARKS)>=7 THEN 10
+                        WHEN de.DBDA_AREA=7 AND SUM(sr.MARKS)>=0 AND SUM(sr.MARKS)<=11 THEN 1
+                        WHEN de.DBDA_AREA=7 AND SUM(sr.MARKS)>=12 AND SUM(sr.MARKS)<=17 THEN 2
+                        WHEN de.DBDA_AREA=7 AND SUM(sr.MARKS)>=18 AND SUM(sr.MARKS)<=23 THEN 3
+                        WHEN de.DBDA_AREA=7 AND SUM(sr.MARKS)>=24 AND SUM(sr.MARKS)<=29 THEN 4
+                        WHEN de.DBDA_AREA=7 AND SUM(sr.MARKS)>=30 AND SUM(sr.MARKS)<=34 THEN 5
+                        WHEN de.DBDA_AREA=7 AND SUM(sr.MARKS)>=35 AND SUM(sr.MARKS)<=40 THEN 6
+                        WHEN de.DBDA_AREA=7 AND SUM(sr.MARKS)>=41 AND SUM(sr.MARKS)<=46 THEN 7
+                        WHEN de.DBDA_AREA=7 AND SUM(sr.MARKS)>=47 AND SUM(sr.MARKS)<=51 THEN 8
+                        WHEN de.DBDA_AREA=7 AND SUM(sr.MARKS)>=52 AND SUM(sr.MARKS)<=57 THEN 9
+                        WHEN de.DBDA_AREA=7 AND SUM(sr.MARKS)>=58 THEN 10
+                        WHEN de.DBDA_AREA=8 AND SUM(sr.MARKS)>=0 AND SUM(sr.MARKS)<=2 THEN 1
+                        WHEN de.DBDA_AREA=8 AND SUM(sr.MARKS)>=3 AND SUM(sr.MARKS)<=4 THEN 2
+                        WHEN de.DBDA_AREA=8 AND SUM(sr.MARKS)=5 THEN 3
+                        WHEN de.DBDA_AREA=8 AND SUM(sr.MARKS)=6 THEN 4
+                        WHEN de.DBDA_AREA=8 AND SUM(sr.MARKS)>=7 AND SUM(sr.MARKS)<=8 THEN 5
+                        WHEN de.DBDA_AREA=8 AND SUM(sr.MARKS)=9 THEN 6
+                        WHEN de.DBDA_AREA=8 AND SUM(sr.MARKS)=10 THEN 7
+                        WHEN de.DBDA_AREA=8 AND SUM(sr.MARKS)>=11 AND SUM(sr.MARKS)<=12 THEN 8
+                        WHEN de.DBDA_AREA=8 AND SUM(sr.MARKS)=13 THEN 9
+                        WHEN de.DBDA_AREA=8 AND SUM(sr.MARKS)>=14 THEN 10
+                    END AS sten
+                FROM dbda_exam de
+                JOIN student_result sr ON de.EXAM = sr.EXAM
+                WHERE sr.STUDENT = v_student_id
+                GROUP BY de.DBDA_AREA
+            ) AS sten_scores
+        ),
+
+        /* Areas of Proficiency - FIXED: Now only for areas where student scored high */
+        (
+            SELECT CASE 
+                WHEN EXISTS (SELECT 1 FROM student_result WHERE STUDENT = v_student_id AND EXAM IN (SELECT EXAM FROM dbda_exam) LIMIT 1) THEN
+                    (SELECT GROUP_CONCAT(DISTINCT ds.DETAIL SEPARATOR '\n- ')
+                     FROM dbda_score_detial ds
+                     WHERE ds.SCORE = 3 
+                     AND EXISTS (
+                         SELECT 1 FROM student_result sr 
+                         JOIN dbda_exam de ON de.EXAM = sr.EXAM
+                         WHERE sr.STUDENT = v_student_id 
+                         AND de.DBDA_AREA = ds.DBDA_AREA
+                         GROUP BY de.DBDA_AREA
+                         HAVING 
+                             (de.DBDA_AREA=1 AND SUM(sr.MARKS) >= 10) OR
+                             (de.DBDA_AREA=2 AND SUM(sr.MARKS) >= 41) OR
+                             (de.DBDA_AREA=3 AND SUM(sr.MARKS) >= 13) OR
+                             (de.DBDA_AREA=4 AND SUM(sr.MARKS) >= 10) OR
+                             (de.DBDA_AREA=6 AND SUM(sr.MARKS) >= 6) OR
+                             (de.DBDA_AREA=7 AND SUM(sr.MARKS) >= 47) OR
+                             (de.DBDA_AREA=8 AND SUM(sr.MARKS) >= 11)
+                     ))
+                ELSE NULL
+            END
+        ),
+
+        /* Areas of Strength - FIXED: Now only for areas where student scored medium */
+        (
+            SELECT CASE 
+                WHEN EXISTS (SELECT 1 FROM student_result WHERE STUDENT = v_student_id AND EXAM IN (SELECT EXAM FROM dbda_exam) LIMIT 1) THEN
+                    (SELECT GROUP_CONCAT(DISTINCT ds.DETAIL SEPARATOR '\n- ')
+                     FROM dbda_score_detial ds
+                     WHERE ds.SCORE = 2 
+                     AND EXISTS (
+                         SELECT 1 FROM student_result sr 
+                         JOIN dbda_exam de ON de.EXAM = sr.EXAM
+                         WHERE sr.STUDENT = v_student_id 
+                         AND de.DBDA_AREA = ds.DBDA_AREA
+                         GROUP BY de.DBDA_AREA
+                         HAVING 
+                             (de.DBDA_AREA=1 AND SUM(sr.MARKS) >= 6 AND SUM(sr.MARKS) <= 9) OR
+                             (de.DBDA_AREA=2 AND SUM(sr.MARKS) >= 26 AND SUM(sr.MARKS) <= 40) OR
+                             (de.DBDA_AREA=3 AND SUM(sr.MARKS) >= 8 AND SUM(sr.MARKS) <= 12) OR
+                             (de.DBDA_AREA=4 AND SUM(sr.MARKS) >= 6 AND SUM(sr.MARKS) <= 9) OR
+                             (de.DBDA_AREA=6 AND SUM(sr.MARKS) >= 4 AND SUM(sr.MARKS) <= 5) OR
+                             (de.DBDA_AREA=7 AND SUM(sr.MARKS) >= 30 AND SUM(sr.MARKS) <= 46) OR
+                             (de.DBDA_AREA=8 AND SUM(sr.MARKS) >= 7 AND SUM(sr.MARKS) <= 10)
+                     ))
+                ELSE NULL
+            END
+        ),
+
+        /* Areas of Improvement - FIXED: Now only for areas where student scored low */
+        (
+            SELECT CASE 
+                WHEN EXISTS (SELECT 1 FROM student_result WHERE STUDENT = v_student_id AND EXAM IN (SELECT EXAM FROM dbda_exam) LIMIT 1) THEN
+                    (SELECT GROUP_CONCAT(DISTINCT ds.DETAIL SEPARATOR '\n- ')
+                     FROM dbda_score_detial ds
+                     WHERE ds.SCORE = 1 
+                     AND EXISTS (
+                         SELECT 1 FROM student_result sr 
+                         JOIN dbda_exam de ON de.EXAM = sr.EXAM
+                         WHERE sr.STUDENT = v_student_id 
+                         AND de.DBDA_AREA = ds.DBDA_AREA
+                         GROUP BY de.DBDA_AREA
+                         HAVING 
+                             (de.DBDA_AREA=1 AND SUM(sr.MARKS) >= 0 AND SUM(sr.MARKS) <= 5) OR
+                             (de.DBDA_AREA=2 AND SUM(sr.MARKS) >= 0 AND SUM(sr.MARKS) <= 25) OR
+                             (de.DBDA_AREA=3 AND SUM(sr.MARKS) >= 0 AND SUM(sr.MARKS) <= 7) OR
+                             (de.DBDA_AREA=4 AND SUM(sr.MARKS) >= 0 AND SUM(sr.MARKS) <= 5) OR
+                             (de.DBDA_AREA=6 AND SUM(sr.MARKS) >= 0 AND SUM(sr.MARKS) <= 3) OR
+                             (de.DBDA_AREA=7 AND SUM(sr.MARKS) >= 0 AND SUM(sr.MARKS) <= 29) OR
+                             (de.DBDA_AREA=8 AND SUM(sr.MARKS) >= 0 AND SUM(sr.MARKS) <= 6)
+                     ))
+                ELSE NULL
+            END
+        ),
+
+        /* MBTI */
+        (
+            SELECT mr.OUTPUT
+            FROM mbtireport mr
+            WHERE mr.RESPONCE = (
+                SELECT GROUP_CONCAT(sr2.ANSWER ORDER BY sr2.ID SEPARATOR ',')
+                FROM student_result sr2
+                WHERE sr2.STUDENT = v_student_id
+                AND sr2.EXAM = 1
+            )
+            LIMIT 1
+        ),
+
+        /* CIS Scores */
+        (SELECT STEN_SCORE FROM student_result_cis WHERE STUDENT = v_student_id AND AREA='ADM' LIMIT 1),
+        (SELECT STEN_SCORE FROM student_result_cis WHERE STUDENT = v_student_id AND AREA='ENT' LIMIT 1),
+        (SELECT STEN_SCORE FROM student_result_cis WHERE STUDENT = v_student_id AND AREA='DEF' LIMIT 1),
+        (SELECT STEN_SCORE FROM student_result_cis WHERE STUDENT = v_student_id AND AREA='SP' LIMIT 1),
+        (SELECT STEN_SCORE FROM student_result_cis WHERE STUDENT = v_student_id AND AREA='CR' LIMIT 1),
+        (SELECT STEN_SCORE FROM student_result_cis WHERE STUDENT = v_student_id AND AREA='PER' LIMIT 1),
+        (SELECT STEN_SCORE FROM student_result_cis WHERE STUDENT = v_student_id AND AREA='MED' LIMIT 1),
+        (SELECT STEN_SCORE FROM student_result_cis WHERE STUDENT = v_student_id AND AREA='TECH' LIMIT 1),
+        (SELECT STEN_SCORE FROM student_result_cis WHERE STUDENT = v_student_id AND AREA='EXP' LIMIT 1),
+        (SELECT STEN_SCORE FROM student_result_cis WHERE STUDENT = v_student_id AND AREA='COMP' LIMIT 1),
+        (SELECT STEN_SCORE FROM student_result_cis WHERE STUDENT = v_student_id AND AREA='HUM' LIMIT 1),
+        (SELECT STEN_SCORE FROM student_result_cis WHERE STUDENT = v_student_id AND AREA='EDN' LIMIT 1),
+        (SELECT STEN_SCORE FROM student_result_cis WHERE STUDENT = v_student_id AND AREA='NAT' LIMIT 1),
+        (SELECT STEN_SCORE FROM student_result_cis WHERE STUDENT = v_student_id AND AREA='CL' LIMIT 1),
+
+        /* CIS STEN AREAS */
+        (
+            SELECT CASE WHEN EXISTS(SELECT 1 FROM student_result_cis WHERE STUDENT = v_student_id LIMIT 1) THEN
+                (SELECT GROUP_CONCAT(DISTINCT cs.DETAILS SEPARATOR ', ')
+                 FROM cisstenarea cs
+                 WHERE cs.SHORT_TITLE IN (
+                     SELECT AREA
+                     FROM student_result_cis
+                     WHERE STUDENT = v_student_id
+                     AND STEN_SCORE = (
+                         SELECT MAX(STEN_SCORE)
+                         FROM student_result_cis
+                         WHERE STUDENT = v_student_id
+                     )
+                 ))
+            ELSE NULL END
+        ),
+
+        /* CIS INTEREST AREAS */
+        (
+            SELECT CASE WHEN EXISTS(SELECT 1 FROM student_result_cis WHERE STUDENT = v_student_id LIMIT 1) THEN
+                (SELECT GROUP_CONCAT(
+                    DISTINCT CONCAT(ci.TITLE, ': ', ci.DETAILS)
+                    SEPARATOR ' | '
+                 )
+                 FROM cisintrestarea ci
+                 WHERE ci.ID IN (
+                     SELECT cs.CIS_INTREST_AREA
+                     FROM cisstenarea cs
+                     WHERE cs.SHORT_TITLE IN (
+                         SELECT AREA
+                         FROM student_result_cis
+                         WHERE STUDENT = v_student_id
+                         AND STEN_SCORE = (
+                             SELECT MAX(STEN_SCORE)
+                             FROM student_result_cis
+                             WHERE STUDENT = v_student_id
+                         )
+                     )
+                 ))
+            ELSE NULL END
+        ),
+
+        /* Feedback */
+        sf.academic,
+        sf.child,
+        sf.parents,
+        sf.careeropt1,
+        sf.careeropt2,
+        sf.remarks,
+        u.name,
+
+        s.CRAETED_ON,
+        NOW()
+
+    FROM student s
+    JOIN school sch ON s.SCHOOL = sch.ID
+    JOIN classes cls ON s.SCHOOL_CLASS = cls.ID
+    JOIN section sec ON s.SECTION = sec.ID
+    LEFT JOIN student_feedback sf ON sf.student = s.ID
+    LEFT JOIN user u ON sf.createdby = u.id
+
+    WHERE s.ID = v_student_id
+
+    ON DUPLICATE KEY UPDATE
+
+        name = VALUES(name),
+        father = VALUES(father),
+        dob = VALUES(dob),
+        admission_no = VALUES(admission_no),
+        exam_key = VALUES(exam_key),
+
+        school_name = VALUES(school_name),
+        class_name = VALUES(class_name),
+        section_name = VALUES(section_name),
+
+        dbda_ca = VALUES(dbda_ca),
+        dbda_cl = VALUES(dbda_cl),
+        dbda_ma = VALUES(dbda_ma),
+        dbda_na = VALUES(dbda_na),
+        dbda_ra = VALUES(dbda_ra),
+        dbda_sa = VALUES(dbda_sa),
+        dbda_va = VALUES(dbda_va),
+        dbda_total = VALUES(dbda_total),
+
+        areas_of_proficiency = VALUES(areas_of_proficiency),
+        areas_of_strength = VALUES(areas_of_strength),
+        areas_of_improvement = VALUES(areas_of_improvement),
+
+        mbti_output = VALUES(mbti_output),
+
+        cis_adm = VALUES(cis_adm),
+        cis_ent = VALUES(cis_ent),
+        cis_def = VALUES(cis_def),
+        cis_sp = VALUES(cis_sp),
+        cis_cr = VALUES(cis_cr),
+        cis_per = VALUES(cis_per),
+        cis_med = VALUES(cis_med),
+        cis_tech = VALUES(cis_tech),
+        cis_exp = VALUES(cis_exp),
+        cis_comp = VALUES(cis_comp),
+        cis_hum = VALUES(cis_hum),
+        cis_edn = VALUES(cis_edn),
+        cis_nat = VALUES(cis_nat),
+        cis_cl = VALUES(cis_cl),
+
+        cis_sten_areas = VALUES(cis_sten_areas),
+        cis_interest_areas = VALUES(cis_interest_areas),
+
+        feedback_academic = VALUES(feedback_academic),
+        feedback_child = VALUES(feedback_child),
+        feedback_parents = VALUES(feedback_parents),
+        feedback_career_opt1 = VALUES(feedback_career_opt1),
+        feedback_career_opt2 = VALUES(feedback_career_opt2),
+        feedback_remarks = VALUES(feedback_remarks),
+        feedback_counsellor = VALUES(feedback_counsellor),
+
+        updated_at = NOW();
+
+END
